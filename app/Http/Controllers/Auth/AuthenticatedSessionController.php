@@ -30,10 +30,10 @@ class AuthenticatedSessionController extends Controller
     $user = Auth::user();
 
     return match($user->role) {
-        'admin' => redirect()->route('admin.dashboard'),
-        'operator' => redirect()->route('operator.lendings'),
-        default => redirect('/'),
-    };
+    'admin'    => redirect()->route('admin.dashboard'),
+    'operator' => redirect()->route('operator.lendings.index'), // ← ubah ini
+    default    => redirect('/'),
+};
 }
 
     /**

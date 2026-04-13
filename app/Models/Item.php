@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Category;
-use App\Models\LendingDetail;
+use App\Models\Lending;
 
 class Item extends Model
 {
@@ -15,41 +15,33 @@ class Item extends Model
         'repair',
     ];
 
-    /**
-     * RELATION: Item -> Category
-     */
+    // RELATION: Item -> Category
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * RELATION: Item -> LendingDetail
-     */
-    public function lendingDetails()
+    // RELATION: Item -> Lending
+    public function lendings()
     {
-        return $this->hasMany(LendingDetail::class, 'item_id');
+        return $this->hasMany(Lending::class, 'item_id');
     }
 
-    /**
-     * ACCESSOR: jumlah yang sedang dipinjam (belum return)
-     */
+    // ACCESSOR: jumlah yang sedang dipinjam (belum dikembalikan)
     public function getActiveLendingCountAttribute()
     {
-        return $this->lendingDetails()
-            ->whereHas('lending', function ($q) {
-                $q->whereNull('return_date'); // sesuaikan dengan kolom kamu
-            })
-            ->sum('qty');
+        return Lending::where('item_id', $this->id)
+            ->whereNull('return_date')
+            ->sum('total');
     }
 
-    /**
-     * ACCESSOR: stok tersedia
-     */
+    // ACCESSOR: stok tersedia = total - dipinjam - rusak
     public function getAvailableAttribute()
     {
-        return ($this->total ?? 0)
-            - ($this->active_lending_count ?? 0)
-            - ($this->repair ?? 0);
+        return $this->total - $this->active_lending_count - ($this->repair ?? 0);
     }
+    public function lendingDetails()
+{
+    return $this->hasMany(\App\Models\LendingDetail::class, 'item_id');
+}
 }

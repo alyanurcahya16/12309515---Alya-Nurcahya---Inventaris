@@ -10,11 +10,12 @@ class Lending extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id', 'total', 'user', 'note', 'datetime', 'returned', 'edited_by'
+        'item_id', 'total', 'user', 'note', 'datetime',
+        'returned', 'return_date', 'edited_by'
     ];
 
-    public function item()
-    {
-        return $this->belongsTo(Item::class);
-    }
+   public function lendingDetails()
+{
+    return $this->hasMany(\App\Models\LendingDetail::class, 'lending_id');
+}
 }

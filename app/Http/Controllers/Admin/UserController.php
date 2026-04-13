@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Exports\UsersExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\OperatorsExport;
+
 use Exception;
 
 class UserController extends Controller
@@ -34,7 +39,7 @@ class UserController extends Controller
         $users = User::where('role', 'admin')
             ->latest()
             ->paginate(10);
-            
+
         return view('admin.users-admin', compact('users'));
     }
 
@@ -46,7 +51,7 @@ class UserController extends Controller
         $users = User::where('role', 'operator')
             ->latest()
             ->paginate(10);
-            
+
         return view('admin.users-operator', compact('users'));
     }
 
@@ -163,7 +168,7 @@ class UserController extends Controller
         } catch (Exception $e) {
             return back()->with('error', 'Gagal menghapus user!');
         }
-    
+
     }
 
     /**
@@ -177,7 +182,32 @@ class UserController extends Controller
             rand(100, 999), // 3 digit angka
             Str::random(1, '0123456789!@#$%'), // special char
         ];
-        
+
         return implode('', $patterns);
     }
+
+// Tambahkan 2 method ini
+public function exportExcel()
+{
+    return Excel::download(new UsersExport, 'admin-accounts-' . now()->format('Ymd') . '.xlsx');
+}
+
+public function exportPdf()
+{
+    $users = User::where('role', 'admin')->get();
+    $pdf = Pdf::loadView('admin.exports.users-pdf', compact('users'));
+    return $pdf->download('admin-accounts-' . now()->format('Ymd') . '.pdf');
+}
+
+public function exportOperatorsExcel()
+{
+    return Excel::download(new OperatorsExport, 'operators-' . now()->format('Ymd') . '.xlsx');
+}
+
+public function exportOperatorsPdf()
+{
+    $users = User::where('role', 'operator')->get();
+    $pdf = Pdf::loadView('admin.exports.operators-pdf', compact('users'));
+    return $pdf->download('operators-' . now()->format('Ymd') . '.pdf');
+}
 }

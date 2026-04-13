@@ -8,13 +8,13 @@ class LendingDetail extends Model
 {
     protected $fillable = ['lending_id', 'item_id', 'qty'];
 
-    public function lending()
-    {
-        return $this->belongsTo(Lending::class);
-    }
-
     public function item()
-    {
-        return $this->belongsTo(Item::class);
-    }
+{
+    return $this->belongsTo(\App\Models\Item::class, 'item_id');
+}
+
+public function lending()
+{
+    return $this->belongsTo(\App\Models\Lending::class, 'lending_id');
+}
 }

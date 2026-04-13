@@ -15,7 +15,8 @@
     <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
         body {
@@ -178,69 +179,91 @@
         </div>
     </nav>
 
-   <aside class="sidebar" id="sidebar">
-    <div class="p-4 pt-5">
-        <ul class="nav flex-column gap-2">
-            <li>
-                <a href="/{{ auth()->user()->role }}/dashboard" class="nav-link-custom d-flex align-items-center {{ request()->is(auth()->user()->role.'/dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-house-door fs-5"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-
-            <li class="mt-3">
-                <div class="section-title mb-2 px-3">ITEMS DATA</div>
-            </li>
-
-            @if(auth()->user()->role === 'admin')
+    <aside class="sidebar" id="sidebar">
+        <div class="p-4 pt-5">
+            <ul class="nav flex-column gap-2">
                 <li>
-                    <a href="/admin/categories" class="nav-link-custom d-flex align-items-center {{ request()->is('admin/categories') ? 'active' : '' }}">
-                        <i class="bi bi-tags fs-5"></i>
-                        <span>Categories</span>
+                    <a href="/{{ auth()->user()->role }}/dashboard"
+                        class="nav-link-custom d-flex align-items-center {{ request()->is(auth()->user()->role . '/dashboard') ? 'active' : '' }}">
+                        <i class="bi bi-house-door fs-5"></i>
+                        <span>Dashboard</span>
                     </a>
                 </li>
-            @else
+
+                <li class="mt-3">
+                    <div class="section-title mb-2 px-3">ITEMS DATA</div>
+                </li>
+
+                @if (auth()->user()->role === 'admin')
+                    <li>
+                        <a href="/admin/categories"
+                            class="nav-link-custom d-flex align-items-center {{ request()->is('admin/categories') ? 'active' : '' }}">
+                            <i class="bi bi-tags fs-5"></i>
+                            <span>Categories</span>
+                        </a>
+                    </li>
+                @else
+                    <li>
+                        <a href="/operator/lendings"
+                            class="nav-link-custom d-flex align-items-center {{ request()->is('operator/lendings') ? 'active' : '' }}">
+                            <i class="bi bi-journal-check fs-5"></i>
+                            <span>Lendings</span>
+                        </a>
+                    </li>
+                @endif
+
                 <li>
-                    <a href="/operator/lendings" class="nav-link-custom d-flex align-items-center {{ request()->is('operator/lendings') ? 'active' : '' }}">
-                        <i class="bi bi-journal-check fs-5"></i>
-                        <span>Lendings</span>
+                    <a href="/{{ auth()->user()->role }}/items"
+                        class="nav-link-custom d-flex align-items-center {{ request()->is(auth()->user()->role . '/items') ? 'active' : '' }}">
+                        <i class="bi bi-box fs-5"></i>
+                        <span>Items</span>
                     </a>
                 </li>
-            @endif
 
-            <li>
-                <a href="/{{ auth()->user()->role }}/items" class="nav-link-custom d-flex align-items-center {{ request()->is(auth()->user()->role.'/items') ? 'active' : '' }}">
-                    <i class="bi bi-box fs-5"></i>
-                    <span>Items</span>
-                </a>
-            </li>
+                <li class="mt-3">
+                    <div class="section-title mb-2 px-3">ACCOUNTS</div>
+                </li>
 
-            <li class="mt-3">
-                <div class="section-title mb-2 px-3">ACCOUNTS</div>
-            </li>
+                <!-- Dropdown Users -->
+                <li class="nav-item dropdown">
+                    <a href="#"
+                        class="nav-link-custom d-flex align-items-center dropdown-toggle {{ request()->is(auth()->user()->role . '/users*') ? 'active' : '' }}"
+                        data-bs-toggle="dropdown" aria-expanded="false">
 
-            <!-- Dropdown Users -->
-            <li class="nav-item dropdown">
-                <a href="#" class="nav-link-custom d-flex align-items-center dropdown-toggle {{ request()->is(auth()->user()->role.'/users*') ? 'active' : '' }}" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-people fs-5"></i>
-                    <span>Users</span>
-                </a>
-                <ul class="dropdown-menu px-2 py-2">
-                    <li>
-                        <a class="dropdown-item {{ request()->is('admin/users-admin') ? 'active' : '' }}" href="/admin/users-admin">
-                            Admin
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item {{ request()->is('admin/users-user') ? 'active' : '' }}" href="/admin/users-user">
-                            Operator
-                        </a>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-    </div>
-</aside>
+                        <i class="bi bi-people fs-5"></i>
+                        <span>Users</span>
+                    </a>
+
+                    <ul class="dropdown-menu px-2 py-2">
+
+                        @if (auth()->user()->role == 'admin')
+                            <li>
+                                <a class="dropdown-item {{ request()->is('admin/users-admin') ? 'active' : '' }}"
+                                    href="/admin/users-admin">
+                                    Admin
+                                </a>
+                            </li>
+
+                            <li>
+                                <a class="dropdown-item {{ request()->is('admin/users-user') ? 'active' : '' }}"
+                                    href="/admin/users-user">
+                                    Operator
+                                </a>
+                            </li>
+                        @elseif(auth()->user()->role == 'operator')
+                            <li>
+                                <a class="dropdown-item {{ request()->is('operator/users/edit') ? 'active' : '' }}"
+                                    href="/operator/users/edit">
+                                    Edit
+                                </a>
+                            </li>
+                        @endif
+
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </aside>
 
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
@@ -259,7 +282,8 @@
             <!-- Page Header -->
             <div class="mb-4">
                 <h2 class="fw-bold mb-1">@yield('page-title', 'Dashboard')</h2>
-                <p class="text-muted">Selamat datang di panel kontrol Inventaris. Pilih menu untuk mulai mengelola data.</p>
+                <p class="text-muted">Selamat datang di panel kontrol Inventaris. Pilih menu untuk mulai mengelola data.
+                </p>
             </div>
 
             <!-- Content -->

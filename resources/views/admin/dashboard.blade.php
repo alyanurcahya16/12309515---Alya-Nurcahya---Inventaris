@@ -51,7 +51,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
@@ -160,7 +160,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-12 col-lg-5">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 border-0">
@@ -168,7 +168,7 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{{ route('admin.items.create') }}" class="btn btn-outline-primary text-start py-3">
+                    <a href="{{ route('admin.items.index') }}" class="btn btn-outline-primary text-start py-3">
                         <svg width="20" height="20" fill="none" stroke="currentColor" class="me-2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>

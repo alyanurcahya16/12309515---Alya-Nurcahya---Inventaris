@@ -3,24 +3,85 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Models\Item;
+use App\Models\Lending;
 use Illuminate\Http\Request;
-use App\Models\Item; // Ensure this is added for fetching items
+use Illuminate\Support\Facades\Auth;
+use App\Exports\LendingsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LendingController extends Controller
 {
     public function index()
     {
-        // Fetch all items from the database
-        $items = Item::all(); 
+        $lendings = Lending::with('item')->latest()->get();
+        $items = Item::with('category')->get();
 
-        // Dummy lending data (you can replace it with real data from a Lending model if necessary)
-        $lendings = [
-            ['id' => 1, 'item_id' => 1, 'user' => 'John Doe', 'total' => 2, 'returned' => false, 'datetime' => '2023-04-10 15:30'],
-            ['id' => 2, 'item_id' => 2, 'user' => 'Jane Smith', 'total' => 1, 'returned' => true, 'datetime' => '2023-04-09 10:00'],
-        ];
-
-        // Pass data to the view
-        return view('operator.lendings', compact('items', 'lendings'));
+        return view('operator.lendings', compact('lendings', 'items'));
     }
-    
+
+   public function store(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required|array',
+        'item_id.*' => 'exists:items,id',
+        'total' => 'required|array',
+        'total.*' => 'integer|min:1',
+        'user' => 'required|string',
+        'datetime' => 'required|date',
+    ]);
+
+    // 1. Simpan lending utama
+    $lending = \App\Models\Lending::create([
+        'user' => $request->user,
+        'note' => $request->note,
+        'datetime' => $request->datetime,
+    ]);
+
+    // 2. Loop item (INI YANG KAMU TANYA)
+    foreach ($request->item_id as $index => $itemId) {
+        $total = $request->total[$index];
+
+        \App\Models\LendingDetail::create([
+            'lending_id' => $lending->id,
+            'item_id' => $itemId,
+            'total' => $total,
+        ]);
+    }
+
+    return redirect()->back()->with('success', 'Lending berhasil ditambahkan');
+}
+
+
+    public function return(Lending $lending)
+    {
+        $lending->update([
+            'returned'    => true,
+            'return_date' => now(),
+            'edited_by'   => Auth::user()->name . ' (' . Auth::user()->role . ')',
+        ]);
+
+        return back()->with('success', 'Item returned successfully!');
+    }
+
+    public function destroy(Lending $lending)
+    {
+        $lending->delete();
+
+        return back()->with('success', 'Lending deleted successfully!');
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(new LendingsExport, 'lendings-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    public function exportPdf()
+    {
+        $lendings = Lending::with('item')->latest()->get();
+        $pdf = Pdf::loadView('operator.exports.lendings-pdf', compact('lendings'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('lendings-' . now()->format('Ymd') . '.pdf');
+    }
 }
