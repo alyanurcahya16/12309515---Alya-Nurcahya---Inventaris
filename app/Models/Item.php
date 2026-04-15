@@ -28,12 +28,14 @@ class Item extends Model
     }
 
     // ACCESSOR: jumlah yang sedang dipinjam (belum dikembalikan)
-    public function getActiveLendingCountAttribute()
-    {
-        return Lending::where('item_id', $this->id)
-            ->whereNull('return_date')
-            ->sum('total');
-    }
+  public function getActiveLendingCountAttribute()
+{
+    return LendingDetail::where('item_id', $this->id)
+        ->whereHas('lending', function ($q) {
+            $q->whereNull('return_date');
+        })
+        ->sum('qty');
+}
 
     // ACCESSOR: stok tersedia = total - dipinjam - rusak
     public function getAvailableAttribute()

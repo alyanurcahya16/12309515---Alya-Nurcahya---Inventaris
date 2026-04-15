@@ -5,81 +5,130 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Category;
+use App\Models\Repair;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AdminItemsExport; // Gunakan export khusus admin
 
 class ItemController extends Controller
 {
-    /**
-     * Display a listing of the items (Admin view)
-     */
     public function index()
-{
-    // Retrieve items with their categories and active lending count
-    $items = Item::with('category')
-        ->withCount([
-            'lendingDetails as active_lending_count' => function ($q) {
-                $q->whereHas('lending', fn($l) => $l->whereNull('return_date'));
+    {
+        $items = Item::with('category')
+            ->withCount([
+                'lendingDetails as active_lending_count' => function ($q) {
+                    $q->whereHas('lending', fn($l) => $l->whereNull('return_date'));
+                }
+            ])
+            ->get();
+
+        $categories = Category::all();
+        $repairs = Repair::orderBy('created_at', 'desc')->get();
+
+        // Hitung repair count per kategori
+        $repairCounts = [];
+        foreach ($repairs as $repair) {
+            $categoryName = $repair->item_type;
+            if (!isset($repairCounts[$categoryName])) {
+                $repairCounts[$categoryName] = 0;
             }
-        ])
-        ->get();
+            $repairCounts[$categoryName]++;
+        }
 
-    // Retrieve all categories
-    $categories = Category::all();
+        return view('admin.items', compact('items', 'categories', 'repairs', 'repairCounts'));
+    }
 
-    // Pass items and categories to the view
-    return view('admin.items', compact('items', 'categories'));
-}
-
-    /**
-     * Store a newly created item in storage
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'name'        => 'required|max:255',
-            'total'       => 'required|integer|min:0',
+            'total' => 'required|integer|min:0'
         ]);
 
-        Item::create([
-            ...$validated,
-            'repair' => 0, // default broken items
-        ]);
+        Item::create($validated);
 
-        return back()->with('success', 'Item added successfully!');
+        return redirect()->route('admin.items.index')->with('success', 'Item berhasil ditambahkan!');
     }
 
-    /**
-     * Update the specified item in storage
-     */
     public function update(Request $request, Item $item)
     {
         $validated = $request->validate([
-            'category_id'    => 'required|exists:categories,id',
-            'name'           => 'required|max:255',
-            'total'          => 'required|integer|min:0',
-            'new_broke_item' => 'nullable|integer|min:0',
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'total' => 'required|integer|min:0'
         ]);
-
-        // Handle broken items
-        if (!empty($validated['new_broke_item'])) {
-            $validated['repair'] = $item->repair + $validated['new_broke_item'];
-        }
-
-        unset($validated['new_broke_item']);
 
         $item->update($validated);
 
-        return back()->with('success', 'Item updated successfully!');
+        return redirect()->route('admin.items.index')->with('success', 'Item berhasil diperbarui!');
     }
 
-    /**
-     * Remove the specified item from storage
-     */
-    public function destroy(Item $item)
-    {
-        $item->delete();
+   public function destroy(Item $item)
+{
+    $item->lendingDetails()->delete();
+    $item->delete();
 
-        return back()->with('success', 'Item deleted successfully!');
+    return redirect()->route('admin.items.index')->with('success', 'Item berhasil dihapus!');
+}
+
+    // Export to Excel (Admin)
+    public function exportExcel()
+    {
+        $items = Item::with('category')
+            ->withCount([
+                'lendingDetails as active_lending_count' => function ($q) {
+                    $q->whereHas('lending', fn($l) => $l->whereNull('return_date'));
+                }
+            ])
+            ->get();
+
+        $repairs = Repair::all();
+
+        // Hitung repair count per kategori
+        $repairCounts = [];
+        foreach ($repairs as $repair) {
+            $categoryName = $repair->item_type;
+            if (!isset($repairCounts[$categoryName])) {
+                $repairCounts[$categoryName] = 0;
+            }
+            $repairCounts[$categoryName]++;
+        }
+
+        return Excel::download(new AdminItemsExport($items, $repairCounts), 'admin-items-export-' . date('Y-m-d') . '.xlsx');
+    }
+
+    // Export to PDF (Admin)
+    public function exportPdf()
+    {
+        $items = Item::with('category')
+            ->withCount([
+                'lendingDetails as active_lending_count' => function ($q) {
+                    $q->whereHas('lending', fn($l) => $l->whereNull('return_date'));
+                }
+            ])
+            ->get();
+
+        $repairs = Repair::all();
+
+        $repairCounts = [];
+        foreach ($repairs as $repair) {
+            $categoryName = $repair->item_type;
+            if (!isset($repairCounts[$categoryName])) {
+                $repairCounts[$categoryName] = 0;
+            }
+            $repairCounts[$categoryName]++;
+        }
+
+        // KODE INI DITARUH DI SINI (di dalam method exportPdf)
+        if (view()->exists('exports.admin-items-pdf')) {
+            $pdf = Pdf::loadView('exports.admin-items-pdf', compact('items', 'repairCounts'));
+            return $pdf->download('admin-items-export-' . date('Y-m-d') . '.pdf');
+        } else {
+            // Fallback ke view lain
+            $pdf = Pdf::loadView('admin.items-pdf', compact('items', 'repairCounts'));
+            return $pdf->download('admin-items-export-' . date('Y-m-d') . '.pdf');
+        }
     }
 }

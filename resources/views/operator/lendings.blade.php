@@ -11,6 +11,13 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4>Lending List</h4>
         <div class="d-flex gap-2">
@@ -32,30 +39,35 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>#</th>
-                            <th>Item</th>
-                            <th>Total</th>
-                            <th>Name</th>
-                            <th>Note</th>
-                            <th>Date & Time</th>
-                            <th>Returned</th>
-                            <th>Edited By</th>
-                            <th>Action</th>
+                            <th width="5%">#</th>
+                            <th width="25%">Item(s)</th>
+                            <th width="10%">Total Qty</th>
+                            <th width="15%">Borrower</th>
+                            <th width="15%">Note</th>
+                            <th width="15%">Date & Time</th>
+                            <th width="10%">Returned</th>
+                            <th width="10%">Edited By</th>
+                            <th width="15%">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($lendings as $index => $l)
                             <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $l->item->name ?? '-' }}</td>
-                                <td>{{ $l->total ?? '-' }}</td>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>
+                                    @foreach ($l->lendingDetails as $detail)
+                                        {{ $detail->item->name }} ({{ $detail->qty }})<br>
+                                    @endforeach
+                                </td>
+                                <td class="text-center fw-bold text-primary">
+                                    {{ $l->lendingDetails->sum('qty') }}
+                                </td>
                                 <td>{{ $l->user ?? '-' }}</td>
                                 <td>{{ $l->note ?? '-' }}</td>
-                                <td>{{ $l->datetime ? \Carbon\Carbon::parse($l->datetime)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-' }}
-                                </td>
-
-                                {{-- Kolom Returned --}}
                                 <td>
+                                    {{ $l->datetime ? \Carbon\Carbon::parse($l->datetime)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-' }}
+                                </td>
+                                <td class="text-center">
                                     @if ($l->returned && $l->return_date)
                                         <span class="badge bg-success">
                                             {{ \Carbon\Carbon::parse($l->return_date)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }}
@@ -64,30 +76,28 @@
                                         <span class="badge bg-warning text-dark">Not Returned</span>
                                     @endif
                                 </td>
-
-                                {{-- Kolom Edited By --}}
                                 <td>{{ $l->edited_by ?? '-' }}</td>
-
-                                {{-- Kolom Action --}}
                                 <td>
-                                    @if (!$l->returned)
-                                        <form action="{{ route('operator.lendings.return', $l->id) }}" method="POST"
+                                    <div class="d-flex gap-1">
+                                        @if (!$l->returned)
+                                            <form action="{{ route('operator.lendings.return', $l->id) }}" method="POST"
+                                                class="d-inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-success btn-sm">Return</button>
+                                            </form>
+                                        @else
+                                            <button class="btn btn-secondary btn-sm" disabled>Returned</button>
+                                        @endif
+
+                                        <form action="{{ route('operator.lendings.destroy', $l->id) }}" method="POST"
                                             class="d-inline">
                                             @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="btn btn-success btn-sm">Return</button>
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Delete this lending record?')">Delete</button>
                                         </form>
-                                    @else
-                                        <button class="btn btn-secondary btn-sm" disabled>Returned</button>
-                                    @endif
-
-                                    <form action="{{ route('operator.lendings.destroy', $l->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Delete this lending record?')">Delete</button>
-                                    </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -103,53 +113,44 @@
 
     <!-- Modal Add Lending -->
     <div class="modal fade" id="addLendingModal" tabindex="-1" aria-labelledby="addLendingModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addLendingModalLabel">Add New Lending</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ route('operator.lendings.store') }}" method="POST">
+                <form action="{{ route('operator.lendings.store') }}" method="POST" id="lendingForm">
                     @csrf
                     <div class="modal-body">
                         <div id="items-wrapper">
-
-                            <div class="item-group border rounded p-3 mb-3 position-relative">
-
-                                {{-- tombol hapus --}}
-                                <button type="button"
-                                    class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-item d-none">
-                                    ✕
-                                </button>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Item Name</label>
-                                    <select class="form-select" name="item_id[]" required>
-                                        <option value="" disabled selected>Select Item</option>
-                                        @foreach ($items as $item)
-                                            <option value="{{ $item->id }}">
-                                                {{ $item->name }} (Available: {{ $item->available ?? 0 }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Total Quantity</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" name="total[]" min="1"
-                                            value="1" required>
-                                        <span class="input-group-text">Unit(s)</span>
+                            <div class="item-group border rounded p-3 mb-3" data-index="0">
+                                <div class="row align-items-end">
+                                    <div class="col-md-7">
+                                        <label class="form-label">Item Name</label>
+                                        <select class="form-select" name="items[0][item_id]" required>
+                                            <option value="" disabled selected>Select Item</option>
+                                            @foreach ($items as $item)
+                                                <option value="{{ $item->id }}">
+                                                    {{ $item->name }} (Stock: {{ $item->total }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" name="items[0][qty]" min="1" value="1" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger remove-item-btn w-100" style="display: none;">
+                                            ✕ Remove
+                                        </button>
                                     </div>
                                 </div>
-
                             </div>
-
                         </div>
 
-                        {{-- tombol tambah --}}
-                        <button type="button" id="add-item" class="btn btn-outline-primary w-100 mb-3">
-                            + More Item
+                        <button type="button" id="add-item-btn" class="btn btn-outline-primary w-100 mb-3">
+                            + Add More Item
                         </button>
 
                         <div class="mb-3">
@@ -181,7 +182,6 @@
                         </div>
                     </div>
 
-
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Add Lending</button>
@@ -191,49 +191,82 @@
         </div>
     </div>
 @endsection
+
 @section('scripts')
-    <script>
-        let index = 1;
+<script>
+    let itemCounter = 1;
 
-        document.getElementById('add-item').addEventListener('click', function() {
-            let wrapper = document.getElementById('items-wrapper');
+    // Add item button
+    document.getElementById('add-item-btn').addEventListener('click', function() {
+        const wrapper = document.getElementById('items-wrapper');
+        const currentIndex = itemCounter;
 
-            let html = `
-    <div class="item-row mb-3 border p-3 rounded">
-        <div class="row">
-            <div class="col-md-6">
-                <label class="form-label">Item Name</label>
-                <select class="form-select" name="items[${index}][item_id]" required>
-                    <option value="">Select Item</option>
-                    @foreach ($items as $item)
-                        <option value="{{ $item->id }}">
-                            {{ $item->name }} (Available: {{ $item->available ?? 0 }})
-                        </option>
-                    @endforeach
-                </select>
+        const html = `
+            <div class="item-group border rounded p-3 mb-3" data-index="${currentIndex}">
+                <div class="row align-items-end">
+                    <div class="col-md-7">
+                        <label class="form-label">Item Name</label>
+                        <select class="form-select" name="items[${currentIndex}][item_id]" required>
+                            <option value="" disabled selected>Select Item</option>
+                            @foreach ($items as $item)
+                                <option value="{{ $item->id }}">
+                                    {{ $item->name }} (Stock: {{ $item->total }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" name="items[${currentIndex}][qty]" min="1" value="1" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger remove-item-btn w-100">✕ Remove</button>
+                    </div>
+                </div>
             </div>
+        `;
 
-            <div class="col-md-4">
-                <label class="form-label">Total</label>
-                <input type="number" class="form-control" name="items[${index}][total]" min="1" required>
-            </div>
+        wrapper.insertAdjacentHTML('beforeend', html);
 
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="button" class="btn btn-danger remove-item">X</button>
-            </div>
-        </div>
-    </div>
-    `;
+        // Show remove button for all items except the first one
+        const allRemoveBtns = document.querySelectorAll('.remove-item-btn');
+        allRemoveBtns.forEach(btn => btn.style.display = 'block');
 
-            wrapper.insertAdjacentHTML('beforeend', html);
-            index++;
-        });
+        itemCounter++;
+    });
 
-        // REMOVE ITEM
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-item')) {
-                e.target.closest('.item-row').remove();
+    // Remove item (event delegation)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-item-btn')) {
+            const itemGroup = e.target.closest('.item-group');
+            if (itemGroup) {
+                itemGroup.remove();
             }
+
+            // Hide remove button if only one item left
+            const remainingItems = document.querySelectorAll('.item-group');
+            if (remainingItems.length === 1) {
+                const removeBtn = remainingItems[0].querySelector('.remove-item-btn');
+                if (removeBtn) {
+                    removeBtn.style.display = 'none';
+                }
+            }
+        }
+    });
+
+    // Debug: Log form data before submit
+    document.getElementById('lendingForm').addEventListener('submit', function(e) {
+        const items = document.querySelectorAll('.item-group');
+        console.log('Total items to submit:', items.length);
+
+        items.forEach((item, idx) => {
+            const select = item.querySelector('select');
+            const qty = item.querySelector('input[type="number"]');
+            console.log(`Item ${idx + 1}:`, {
+                item_id: select?.value,
+                qty: qty?.value
+            });
         });
-    </script>
+    });
+</script>
 @endsection

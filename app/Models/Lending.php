@@ -16,6 +16,6 @@ class Lending extends Model
 
    public function lendingDetails()
 {
-    return $this->hasMany(\App\Models\LendingDetail::class, 'lending_id');
+    return $this->hasMany(\App\Models\LendingDetail::class);
 }
 }

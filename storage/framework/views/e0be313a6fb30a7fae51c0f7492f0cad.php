@@ -13,16 +13,16 @@
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">Login</h4>
                 </div>
-                
+
                 <div class="card-body">
                     <form action="<?php echo e(route('login')); ?>" method="POST">
                         <?php echo csrf_field(); ?>
-                        
+
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" 
-                                   name="email" 
-                                   id="email" 
+                            <input type="email"
+                                   name="email"
+                                   id="email"
                                    class="form-control <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -30,7 +30,7 @@ if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" 
+unset($__errorArgs, $__bag); ?>"
                                    value="<?php echo e(old('email')); ?>"
                                    required>
                             <?php $__errorArgs = ['email'];
@@ -47,9 +47,9 @@ unset($__errorArgs, $__bag); ?>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" 
-                                   name="password" 
-                                   id="password" 
+                            <input type="password"
+                                   name="password"
+                                   id="password"
                                    class="form-control"
                                    required>
                         </div>
@@ -70,4 +70,5 @@ unset($__errorArgs, $__bag); ?>
     </div>
 </div>
 <?php $__env->stopSection(); ?>
+
 <?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Alya.Pratiwi\laragon\www\12309515---Alya-Nurcahya---Inventaris\resources\views/landing.blade.php ENDPATH**/ ?>

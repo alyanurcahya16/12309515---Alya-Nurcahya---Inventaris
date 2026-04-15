@@ -45,10 +45,16 @@ class CategoryController extends Controller
     }
 
     // Delete category
-    public function destroy(Category $category)
-    {
-        $category->delete();
+    // Delete category
+public function destroy(Category $category)
+{
+    $itemCount = $category->items()->count();
 
-        return back()->with('success', 'Category deleted successfully!');
+    if ($itemCount > 0) {
+        return back()->with('error', "Tidak bisa menghapus kategori ini karena masih memiliki {$itemCount} item. Hapus atau pindahkan item terlebih dahulu.");
     }
+
+    $category->delete();
+    return back()->with('success', 'Kategori berhasil dihapus!');
+}
 }

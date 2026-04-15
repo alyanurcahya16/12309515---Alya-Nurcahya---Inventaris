@@ -10,7 +10,7 @@ class LendingDetail extends Model
 
     public function item()
 {
-    return $this->belongsTo(\App\Models\Item::class, 'item_id');
+    return $this->belongsTo(\App\Models\Item::class);
 }
 
 public function lending()
